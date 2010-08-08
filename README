@@ -1,0 +1,21 @@
+TODO
+----
+
+ - new types:
+   * hle_world
+
+ - new functions:
+   * hle_world_load_landmass(char *data)
+   * hle_app_draw_world()
+
+Add world to app.
+Add jump.
+Add more natural walk.
+Add textures.
+Add OSD.
+Add Sky and Space (flat world).
+
+Far down the line:
+ - idea of a temple to venerate the block changing gods
+
+Avatars will not have name tags.
