@@ -11,6 +11,9 @@ enum etype {
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 768
 
+#define LAND_WIDTH 64
+#define LAND_HEIGHT 32
+
 typedef struct hle_obj_model_t {
 	double *v;
 	int vcount;
@@ -35,9 +38,16 @@ typedef struct hle_entity_t {
 	char *model_path;
 } hle_entity;
 
+typedef struct hle_land_t {
+	unsigned int width;
+	unsigned int height;
+	char *data;
+} hle_land;
+
 typedef struct hle_app_t {
 	hle_entity	*player;
 	hle_entity	**entities;
+	hle_land	*land;
 } hle_app;
 
 /* strlcpy.c */

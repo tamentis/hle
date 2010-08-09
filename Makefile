@@ -1,17 +1,33 @@
-CC=gcc
-CFLAGS=`sdl-config --cflags` -Wall -ggdb
-LIBS=`sdl-config --libs` -lGL -lGLU -lm
+CC?=gcc
+CFLAGS+=`sdl-config --cflags` -Wall -ggdb
+LIBS+=`sdl-config --libs` -lGL -lGLU -lm
+OBJECTS=main.o hle_app.o hle_entity.o hle_player.o \
+	memory.o strlcpy.o objloader.o fatal.o hle_land.o
 
-all:
-	gcc ${CFLAGS} -c main.c
-	gcc ${CFLAGS} -c memory.c
-	gcc ${CFLAGS} -c hle_game.c
-	gcc ${CFLAGS} -c hle_entity.c
-	gcc ${CFLAGS} -c hle_player.c
-	gcc ${CFLAGS} -c strlcpy.c
-	gcc ${CFLAGS} -c objloader.c
-	gcc ${CFLAGS} -c fatal.c
-	gcc ${LIBS} -o hivexplorer main.o hle_game.o hle_entity.o hle_player.o \
-		memory.o strlcpy.o objloader.o fatal.o
+PROGRAM=hle
 
+all: $(PROGRAM)
 
+$(PROGRAM): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LIBS) -o $(PROGRAM)
+
+$(OBJECTS): %.o: %.c hive.h
+	$(CC) ${CFLAGS} -c $<
+
+clean:
+	rm -f $(OBJECTS) $(PROGRAM) tags TAGS LOG
+
+tags:
+	etags *.c *.h
+
+memwatch:
+	top -d 0.1 -p `pidof rezerwar`
+
+cpuwatch:
+	top -d 1.0 -p `pidof rezerwar`
+
+profiler:
+	valgrind --tool=callgrind ./${PROGRAM}
+
+valgrind:
+	valgrind --leak-check=full --show-reachable=yes ./$(PROGRAM) >& LOG

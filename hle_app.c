@@ -1,21 +1,13 @@
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-#if defined(__APPLE__) && defined(__MACH__)
-#include <OpenGL/gl.h>	// Header File For The OpenGL32 Library
-#include <OpenGL/glu.h>	// Header File For The GLu32 Library
-#else
-#include <GL/gl.h>	// Header File For The OpenGL32 Library
-#include <GL/glu.h>	// Header File For The GLu32 Library
-#endif
-
 #include <math.h>
 #include "SDL.h"
+#include "hlegl.h"
 #include "hive.h"
 
 extern hle_app *app;
 
+/**
+ * Constructor for the application. One global instance will be spawned.
+ */
 hle_app *
 hle_app_new()
 {
@@ -23,14 +15,22 @@ hle_app_new()
 
 	hle_app *app = hle_malloc(sizeof(hle_app));
 	app->player = hle_player_new();
-	app->entities = hle_malloc(sizeof(hle_entity *) * MAX_ENTITIES);
 
+	/* Entity slots */
+	app->entities = hle_malloc(sizeof(hle_entity *) * MAX_ENTITIES);
 	for (i = 0; i < MAX_ENTITIES; i++)
 		app->entities[i] = NULL;
+	
+	/* Land */
+	app->land = hle_land_new();
 
 	return app;
 }
 
+
+/**
+ * Destructor for the app, should only be called once at the end of main.
+ */
 void
 hle_app_kill()
 {
@@ -39,6 +39,9 @@ hle_app_kill()
 }
 
 
+/**
+ * This is the main game loop.
+ */
 void
 hle_app_main_loop()
 {
@@ -193,6 +196,11 @@ hle_app_main_loop()
 }
 
 
+/**
+ * Register one entity in the app, will cause this entity to be drawn and
+ * updated in the normal game loop. When we reach the max, a fatal error
+ * is thrown.
+ */
 void
 hle_app_register_entity(hle_entity *e)
 {
@@ -211,7 +219,9 @@ hle_app_register_entity(hle_entity *e)
 }
 
 
-/* Draw a single entity */
+/**
+ * Draw a single entity 
+ */
 void
 hle_app_draw_entity(hle_entity *e)
 {
@@ -249,7 +259,9 @@ hle_app_draw_entity(hle_entity *e)
 }
 
 
-/* Draw all the entities */
+/**
+ * Draw all the entities
+ */
 void
 hle_app_draw_entities()
 {
@@ -267,14 +279,9 @@ hle_app_draw_entities()
 }
 
 
-/* The main drawing function. */
 void
-hle_app_draw()
+hle_app_draw_lights()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// Clear The Screen And The Depth Buffer
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
 	/* white ambient light at half intensity (rgba) */
 	GLfloat LightAmbient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
@@ -290,124 +297,83 @@ hle_app_draw()
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);  // add lighting. (diffuse).
 	glLightfv(GL_LIGHT1, GL_SPECULAR,LightSpecular); // set light position.
 	glLightfv(GL_LIGHT1, GL_POSITION,LightPosition); // set light position.
-	glEnable(GL_LIGHT1);                             // turn light 1 on.
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHTING);
+}
+
+
+void
+switchToOrtho()
+{
+	glDisable(GL_DEPTH_TEST);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, 10, 5, 0, 0, 1);       
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+
+void
+switchBackToFrustum ()
+{
+	glEnable(GL_DEPTH_TEST);
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+
+
+void
+hle_app_draw_hud()
+{
+	switchToOrtho();
+	glTranslatef(0.0, 0.0, -1.0f);
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor3f(0.5f, 0, 0);
+	glVertex3f( 0.0f,  0.0f, 0.0f);
+	glVertex3f( 0.0f,  1.0f, 0.0f);
+	glVertex3f( 1.0f,  0.0f, 0.0f);
+	glVertex3f( 1.0f,  1.0f, 0.0f);
+	glEnd();
+	switchBackToFrustum();
+}
+
+
+/**
+ * The main drawing function, typically draws the world, then the entities,
+ * then the HUD.
+ */
+void
+hle_app_draw()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// Clear The Screen And The Depth Buffer
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glPushMatrix();
+
+	hle_app_draw_lights();
 
 	/* The initial position of the world defines the view of the player. */
 	glRotatef(app->player->rot, 0, 1.0f, 0); // x, y, z
 	glTranslatef(app->player->x, -4.0f, -app->player->y);
 	glRotatef(-90.0f, 1.0f, 0, 0);
 
-	/* Center of the world */
+	/* Draw the land */
 	glPushMatrix();
-
-	// glTranslatef(0.0f, 0.0f, -6.0f);
-
-	float mcolor2[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor2);
-
-	glBegin(GL_POLYGON);
-	glVertex3f( 0.0f, 1.0f, 0.1f);
-	glVertex3f( 1.0f,-1.0f, 0.1f);
-	glVertex3f(-1.0f,-1.0f, 0.1f);
-	glEnd();
-
-
-	// glTranslatef(3.0f,0.0f,0.0f);
-	float mcolor3[] = { 0.0f, 0.5f, 0.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor3);
-		
-	glBegin(GL_TRIANGLE_STRIP);
-	glColor3f(0.5f, 0, 0);
-	glVertex3f( 0.0f,  0.0f, 0.0f);
-	glVertex3f( 0.0f, 20.0f, 0.0f);
-	glVertex3f(20.0f,  0.0f, 0.0f);
-	glVertex3f(20.0f, 20.0f, 0.0f);
-	glEnd();
-
-	glTranslatef(-20.0f, 0.0f, 0.0f);
-
-	float mcolor4[] = { 0.0f, 0.0f, 0.5f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor4);
-
-	glBegin(GL_TRIANGLE_STRIP);
-	glColor3f(0, 0.5f, 0);
-	glVertex3f( 0.0f,  0.0f, 0.0f);
-	glVertex3f( 0.0f, 20.0f, 0.0f);
-	glVertex3f(20.0f,  0.0f, 0.0f);
-	glVertex3f(20.0f, 20.0f, 0.0f);
-	glEnd();
-
-	glTranslatef(0.0f, -20.0f, 0.0f);
-
-	float mcolor5[] = { 0.7f, 0.5f, 0.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor5);
-
-	glBegin(GL_TRIANGLE_STRIP);
-	glColor3f(0.7f, 0.5f, 0);
-	glVertex3f( 0.0f,  0.0f, 0.0f);
-	glVertex3f( 0.0f, 20.0f, 0.0f);
-	glVertex3f(20.0f,  0.0f, 0.0f);
-	glVertex3f(20.0f, 20.0f, 0.0f);
-	glEnd();
-
-	glTranslatef(20.0f, 0.0f, 0.0f);
-
-	float mcolor6[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor6);
-
-	glBegin(GL_TRIANGLE_STRIP);
-	glColor3f(0.5f, 0.5f, 0.5f);
-	glVertex3f( 0.0f,  0.0f, 0.0f);
-	glVertex3f( 0.0f, 20.0f, 0.0f);
-	glVertex3f(20.0f,  0.0f, 0.0f);
-	glVertex3f(20.0f, 20.0f, 0.0f);
-	glEnd();
-
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	/* Back at the center of the world */
-	glPopMatrix();
-	glPushMatrix();
-	glTranslatef(0.0, 0.0, 4.0f);		// Move Left 1.5 Units And Into The Screen 6.0
-
-	hle_app_draw_entities();
-
+		hle_land_draw(app->land);
 	glPopMatrix();
 
-	// glTranslatef(0.0, 0.0, -4.0f);		// Move Left 1.5 Units And Into The Screen 6.0
-	// glRotatef(90.0f, 1.0f, 0, 0); // x, y, z
-
-#if 0
-	/* Push Env Matrix in the stack. */
+	/* Draw entities */
 	glPushMatrix();
-
-	// glEnable(GL_LIGHTING);
-	/* Repush ENV before drawing signs */
+		glTranslatef(0.0, 0.0, 4.0f);
+		hle_app_draw_entities();
 	glPopMatrix();
-	glPushMatrix();
 
-	float mcolor[] = { 0.25f, 0.14f, 0.09f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor);
-
-	hle_obj_model *model = hle_load_faces_from_obj("dfsign.obj");
-	model->z = 2;
-	model->rot_x = 90.0;
-	hle_app_draw_obj_model(model);
-	model->x = 5;
-	hle_app_draw_obj_model(model);
-
-	/* Reset for player */
+	/* Return to identity to draw the HUD */
 	glPopMatrix();
-	glPushMatrix();
+	hle_app_draw_hud();
 
-	// glRotatef(-90.0f, 1.0f, 0, 0); // x, y, z
-	glRotatef(app->player->pan, 1.0f, 0, 0); // x, y, z
-	glRotatef(app->player->rot, 0, 0, 1.0f); // x, y, z
-	glTranslatef(app->player->x, app->player->y, 4.0f);		// Move Left 1.5 Units And Into The Screen 6.0
-#endif
-
-
-
-	// swap buffers to display, since we're double buffered.
 	SDL_GL_SwapBuffers();
 }
