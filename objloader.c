@@ -73,9 +73,6 @@ hle_load_faces_from_obj(char *filename)
 	fclose(fp);
 
 	hle_obj_model *model = hle_malloc(sizeof(hle_obj_model));
-	model->x = 0;
-	model->y = 0;
-	model->z = 0;
 	model->rot_x = 0;
 	model->rot_y = 0;
 	model->rot_z = 0;

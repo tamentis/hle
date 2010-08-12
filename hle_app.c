@@ -24,6 +24,9 @@ hle_app_new()
 	/* Land */
 	app->land = hle_land_new();
 
+	/* Controls */
+	app->controls = hle_controls_new();
+
 	return app;
 }
 
@@ -45,156 +48,178 @@ hle_app_kill()
 void
 hle_app_main_loop()
 {
-	int done = 0;
-	SDL_Event event;
+	SDL_Event	event;
+	uint32_t	start,		// when the game loop started
+			now,		// time for each loop
+			framecount = 0, // numbers of frames drawn in a tick
+			lastframe = 0;	// whenever the last frame was drawn
 
-	/* Walking event vars */
-	int walk_forward = 0;
-	int walk_backward = 0;
-	double walk_speed = 0.05f;
+	hle_app_setup_game_world();
 
-	/* Straffing event vars */
-	int strafe_right = 0;
-	int strafe_left = 0;
-	double strafe_speed = 0.05f;
+	start = SDL_GetTicks();
+	while (!app->controls->exit) {
+		now = SDL_GetTicks();
 
-	/* Turning event vars (keyboard) */
-	int turn_left = 0;
-	int turn_right = 0;
-	double turn_speed = 0.1f;
+		/* Pump events into the control object. */
+		while (SDL_PollEvent(&event))
+			hle_controls_read_from_event(app->controls, event);
 
-	/* Mouse sensitivity */
-	double mouse_sensitivity = 0.20f;
-	double mouse_rotate;
-	double mouse_pan;
+		/* Handle user inputs */
+		hle_app_handle_events(now);
 
-	/* Create temp objects */
-	hle_entity *sign1 = hle_sign_new();
-	sign1->z = 1.0;
-	hle_entity *sign2 = hle_sign_new();
-	sign2->z = 3.0;
-	sign2->x = 5.0;
-	sign2->rot = 70.0;
+		/* Actual game logic */
+		hle_app_game_logic(now);
 
-	hle_app_register_entity(sign1);
-	hle_app_register_entity(sign2);
-
-	while (!done) {
-		hle_app_draw();
-
-		/* Mouse turn */
-		if (mouse_rotate != 0.0f) {
-			hle_entity_set_rot_relative(app->player,
-					mouse_rotate * mouse_sensitivity);
-			mouse_rotate = 0.0f;
-		}
-
-		/* Mouse pan */
-		if (mouse_pan != 0.0f) {
-			app->player->pan -= mouse_pan * mouse_sensitivity;
-			mouse_pan = 0.0f;
-		}
-
-		/* Handle walking movements */
-		if (walk_forward > walk_backward) {
-			double rad_angle = (M_PI / 180.0) * app->player->rot;
-			app->player->x -= sin(rad_angle) * walk_speed;
-			app->player->y -= cos(rad_angle) * walk_speed;
-		} else if (walk_backward > walk_forward) {
-			double rad_angle = (M_PI / 180.0) * app->player->rot;
-			app->player->x += sin(rad_angle) * walk_speed;
-			app->player->y += cos(rad_angle) * walk_speed;
-		}
-
-		/* Handle turning movements */
-		if (turn_left > turn_right) {
-			hle_entity_set_rot_relative(app->player, -turn_speed);
-		} else if (turn_right > turn_left) {
-			hle_entity_set_rot_relative(app->player, turn_speed);
-		}
-
-		/* Handle strafe movements */
-		if (strafe_left > strafe_right) {
-			double rad_angle = (M_PI / 180.0) * (app->player->rot - 90.0);
-			app->player->x -= sin(rad_angle) * strafe_speed;
-			app->player->y -= cos(rad_angle) * strafe_speed;
-		} else if (strafe_right > strafe_left) {
-			double rad_angle = (M_PI / 180.0) * (app->player->rot - 90.0);
-			app->player->x += sin(rad_angle) * strafe_speed;
-			app->player->y += cos(rad_angle) * strafe_speed;
-		}
-
-		/* This could go in a separate function */
-		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT)
-				done = 1;
-			
-			if (event.type == SDL_MOUSEMOTION) {
-				mouse_rotate = event.motion.xrel;
-				mouse_pan = event.motion.yrel;
-			}
-
-			if (event.type == SDL_KEYDOWN) {
-				switch (event.key.keysym.sym) {
-				case SDLK_ESCAPE:
-					done = 1;
-					break;
-				case SDLK_LEFT:
-					turn_left = turn_right + 1;
-					break;
-				case SDLK_RIGHT:
-					turn_right = turn_left + 1;
-					break;
-				case SDLK_w:
-				case SDLK_UP:
-					walk_forward = walk_backward + 1;
-					break;
-				case SDLK_s:
-				case SDLK_DOWN:
-					walk_backward = walk_forward + 1;
-					break;
-				case SDLK_a:
-					strafe_left = strafe_right + 1;
-					break;
-				case SDLK_d:
-					strafe_right = strafe_left + 1;
-					break;
-				case SDLK_l:
-					glEnable(GL_LIGHTING);
-					break;
-				default:
-					break;
-				}
-			}
-
-			if (event.type == SDL_KEYUP) {
-				switch (event.key.keysym.sym) {
-					case SDLK_LEFT:
-						turn_left = 0;
-						break;
-					case SDLK_RIGHT:
-						turn_right = 0;
-						break;
-					case SDLK_w:
-						walk_forward = 0;
-						break;
-					case SDLK_s:
-						walk_backward = 0;
-						break;
-					case SDLK_a:
-						strafe_left = 0;
-						break;
-					case SDLK_d:
-						strafe_right = 0;
-						break;
-					default:
-						break;
-				}
-			}
+		/* Render at maximum MAXFPS */
+		if (lastframe < (now - 1000/MAXFPS)) {
+			framecount++;
+			lastframe = now;
+			hle_app_draw();
 		}
 	}
 }
 
+
+/**
+ * Setup a few initial objects.
+ * FIXME: remove temp objects.
+ */
+void
+hle_app_setup_game_world()
+{
+	hle_entity *sign1,
+		   *sign2;
+	
+	sign1 = hle_sign_new();
+	sign1->z = 1.0;
+	hle_app_register_entity(sign1);
+
+	sign2 = hle_sign_new();
+	sign2->z = 3.0;
+	sign2->x = 5.0;
+	sign2->rot = 70.0;
+	hle_app_register_entity(sign2);
+}
+
+
+/**
+ * Handle all the entity movements.
+ */
+void
+hle_app_game_logic(uint32_t now)
+{
+}
+
+
+/**
+ * Handle all the input and alter the control object of the application.
+ *
+ * Some events should only be triggered on a frame basis, this will
+ * make sure everybody walks at the same speed on all hardware, but
+ * it will also avoid a one hit button from being lost between two
+ * frames.
+ */
+void
+hle_app_handle_events(uint32_t now)
+{
+	hle_controls *c = app->controls;
+	int event_frame_size = 8;
+
+	if (now - event_frame_size > c->last) {
+		hle_app_handle_framed_events(now);
+		c->last = now;
+	}
+
+	hle_app_handle_hit_events(now);
+}
+
+
+/**
+ * Handle all the events that need to be handled at time of keypress (hit
+ * based).
+ */
+void
+hle_app_handle_hit_events(uint32_t now)
+{
+}
+
+
+/**
+ * Handle all the events that need to be triggered on a time basis (per frame).
+ */
+void
+hle_app_handle_framed_events(uint32_t now)
+{
+	hle_controls *c = app->controls;
+
+	float walk_speed = 0.5f;
+	float strafe_speed = 0.5f;
+	float turn_speed = 0.1f;
+	/*
+	 * from math import sin
+	 * ", ".join(["%.2f" % (sin(x/12.0) * 4.0) for x in range(40)] + [0])
+	 */
+	float jump_steps[] = {
+		0.00, 0.33, 0.66, 0.99, 1.31, 1.62, 1.92, 2.20, 2.47, 2.73,
+		2.96, 3.17, 3.37, 3.53, 3.68, 3.80, 3.89, 3.95, 3.99, 4.00,
+		3.98, 3.94, 3.86, 3.76, 3.64, 3.49, 3.31, 3.11, 2.89, 2.65,
+		2.39, 2.12, 1.83, 1.53, 1.21, 0.89, 0.56, 0.23, -0.10, -0.43,
+		0 };
+	float mouse_sensitivity = 0.20f;
+	float rad_angle;
+
+	/* Mouse turn */
+	if (c->mouse_rotate != 0.0f) {
+		hle_entity_set_rot_relative(app->player,
+				c->mouse_rotate * mouse_sensitivity);
+		c->mouse_rotate = 0.0f;
+	}
+
+	/* Mouse pan */
+	if (c->mouse_pan != 0.0f) {
+		app->player->pan -= c->mouse_pan * mouse_sensitivity;
+		c->mouse_pan = 0.0f;
+	}
+
+	/* Handle walking movements */
+	if (c->walk_forward > c->walk_backward) {
+		rad_angle = (M_PI / 180.0) * app->player->rot;
+		app->player->x -= sin(rad_angle) * walk_speed;
+		app->player->y -= cos(rad_angle) * walk_speed;
+	} else if (c->walk_backward > c->walk_forward) {
+		rad_angle = (M_PI / 180.0) * app->player->rot;
+		app->player->x += sin(rad_angle) * walk_speed;
+		app->player->y += cos(rad_angle) * walk_speed;
+	}
+
+	/* Handle turning movements */
+	if (c->turn_left > c->turn_right) {
+		hle_entity_set_rot_relative(app->player, -turn_speed);
+	} else if (c->turn_right > c->turn_left) {
+		hle_entity_set_rot_relative(app->player, turn_speed);
+	}
+
+	/* Handle strafe movements */
+	if (c->strafe_left > c->strafe_right) {
+		rad_angle = (M_PI / 180.0) * (app->player->rot - 90.0);
+		app->player->x -= sin(rad_angle) * strafe_speed;
+		app->player->y -= cos(rad_angle) * strafe_speed;
+	} else if (c->strafe_right > c->strafe_left) {
+		rad_angle = (M_PI / 180.0) * (app->player->rot - 90.0);
+		app->player->x += sin(rad_angle) * strafe_speed;
+		app->player->y += cos(rad_angle) * strafe_speed;
+	}
+
+	/* Handle jumping */
+	if (c->jumping) {
+		app->player->z = jump_steps[c->jump_step_idx];
+		c->jump_step_idx++;
+		if (jump_steps[c->jump_step_idx] == 0) {
+			c->jump_step_idx = 0;
+			c->jumping = 0;
+		}
+	}
+}
 
 /**
  * Register one entity in the app, will cause this entity to be drawn and
@@ -205,8 +230,6 @@ void
 hle_app_register_entity(hle_entity *e)
 {
 	int i;
-
-	printf("REGISTER!\n");
 
 	for (i = 0; i < MAX_ENTITIES; i++) {
 		if (app->entities[i] == NULL) {
@@ -230,7 +253,7 @@ hle_app_draw_entity(hle_entity *e)
 	double x;
 	double y;
 	double z;
-	double rot_x = 0.0f, rot_y = 0.0f, rot_z = 0.0f;
+	float rot_x = 0.0f, rot_y = 0.0f, rot_z = 0.0f;
 
 	glPushMatrix();
 
@@ -283,10 +306,10 @@ void
 hle_app_draw_lights()
 {
 	/* white ambient light at half intensity (rgba) */
-	GLfloat LightAmbient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat LightAmbient[] = { 0, 0, 0, 1.0f };
 
 	/* super bright, full intensity diffuse light. */
-	GLfloat LightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat LightDiffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	GLfloat LightSpecular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
 	/* position of light (x, y, z, (position of light)) */
@@ -298,6 +321,20 @@ hle_app_draw_lights()
 	glLightfv(GL_LIGHT1, GL_SPECULAR,LightSpecular); // set light position.
 	glLightfv(GL_LIGHT1, GL_POSITION,LightPosition); // set light position.
 	glEnable(GL_LIGHT1);
+
+	/* Player view */
+	GLfloat Light2Diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	GLfloat Light2Position[] = { app->player->x, app->player->y,
+		app->player->z - 2.0f, 1.0f };
+
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, Light2Diffuse);
+	glLightfv(GL_LIGHT2, GL_POSITION,Light2Position);
+	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, 1.0f);
+	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.5f);
+	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.08f);
+
+	glEnable(GL_LIGHT2);
+
 	glEnable(GL_LIGHTING);
 }
 
@@ -351,13 +388,14 @@ hle_app_draw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// Clear The Screen And The Depth Buffer
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	glShadeModel(GL_SMOOTH);
 	glPushMatrix();
 
 	hle_app_draw_lights();
 
 	/* The initial position of the world defines the view of the player. */
 	glRotatef(app->player->rot, 0, 1.0f, 0); // x, y, z
-	glTranslatef(app->player->x, -4.0f, -app->player->y);
+	glTranslatef(app->player->x, -4.0f - app->player->z, -app->player->y);
 	glRotatef(-90.0f, 1.0f, 0, 0);
 
 	/* Draw the land */

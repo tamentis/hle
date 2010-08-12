@@ -13,10 +13,20 @@
 hle_land *
 hle_land_new()
 {
+	int i;
+	float v;
 	hle_land *land = hle_malloc(sizeof(hle_land));
 	land->width = LAND_WIDTH;
 	land->height = LAND_HEIGHT;
 	land->data = hle_strcp("wwwssdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddwwsddddddsswwsswwwssssssssssssswwwwwwwwwwpwwwpwdddddgdddddddgdddwssdddggggsswwwwwssssswssssssssswwwpwwwpwppwpwwddddddgsssssgddddwssddgggggswwwwwwwssswsgggggggssswwpwpwpwpwwppwddddddsspspssddddwsddddggggswswsswwwwwwsggggggggssswwpwpwwwpwpwwwdddddsspspssddddwssdddggggswdwdswwwwwwsggssssgggsssswwwwwwwwwwwpdddddsssssssddddwsssdddgggswwwwwwwwwwssggswwsgggggssssssswwwwwwwwddddsssssssddddwwssddddggsswwwwwwwwwsgggswwsggggggssssssswswssssdddddspppsdddddwwsssddddgggssswswsswsggggswsggggggggssssssssssssdddddpssspdddddwwwsssddddggggswswsswwsggggssgggggggggsssgsgssssssddddddddddddddwwwwsssddddgggssgsssswwgggggggggggggggggggggggggggsdddddppppppppwwwwwssdddddggggggggsswwggggggggggggggggggggggggggssdddppspspspswwwwwsssdddddggggggggssgwwgggggggggssgggggssssssssssddppppppppppwwwwwssssddddddggggggggggwwwwwwwwwwwssssssssssssssssgdpsppddddddwwwwwwwsssdddddddggggggggggggggggggwwwsssswwwwsssssgggpppdddddddwwwwwwwwsssddddddddddgsgggsggsgsgssggswwwwwwwsswssggggpspggdddddwwwwwwwwssssdddddddgggsggsgsgsssgsgsgsswwwwwwwwwssggggpppgdddwddwwwwwwwwwssssdddddddggsggsssgsgsgsgsgsswwwwwwwwwssggggpspgddgdddwwwwwwwwwwssddddddddggsggsgsgsgsgsgsgsswwwwwwwwwwsggggpppgddddddwwgwwwwwwwwdddddddddddssgsgsgsgsgssggsswwwwwwwwwsssgggpspgddddddwwgwwwwwssssdssssddddddgggggggggggggsssswwwwwwwwwwsgggpppggdddddwwgwwwwsswsssssssssdddddwwgwwwdgggggssssswwwwwwssssgggpspggdddddwpppwwswwwwwwwwsssssddddddwwwddgggggggssswwwwwwsggggggpppgggddddwpppwwwwwwwwwwwwsssssddddddddddgggggppppppwwwssssgggggpspgggddddwpppwwwwwwwwwwwwwssssssdddddddddgggppppppppssssgggggggpppgggddddwwpwwwwwwwwwwwwwwwwsssssddddddddddppppppppppsgggggggggpspggggdddpwpwpwwgwwgwwwwwwwwwsssssdddddddddppppggpppppppppppppppppgpggdddwpppwwggggggwwwwwwwwwssssssdddddddpppggggpspspspspspspsppggggdddwwpgwggwggwgwwwwwwwwwwwssssssdddddpppggggppppppppppppppppgggddddwwpwgwgggggggwgwwwwwwwwwwssssssdddppppggppppddgggggggggggggdddddwpwpwwggggggwgwwwwwwwwwwwwwsssssssdppppppppdddddddddggggggddddddwpwpwwwgwwgwwwwwwwwwwwwwwwwwssssssssppppppdddddddddddddddddddddd");
+
+	land->alt = hle_malloc(sizeof(float) * LAND_WIDTH * LAND_HEIGHT * 4);
+
+	/* Generate the random altitudes */
+	for (i = 0; i < LAND_WIDTH * LAND_HEIGHT * 4; i++) {
+		land->alt[i] = (random() % 100) / 50.0f;
+	}
+
 	return land;
 }
 
@@ -47,9 +57,9 @@ hle_land_draw(hle_land *land)
 
 	glPushMatrix();
 
+	/* Base triangle, only here for fun */
 	float mcolor2[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor2);
-
 	glBegin(GL_POLYGON);
 	glVertex3f( 0.0f, 1.0f, 0.1f);
 	glVertex3f( 1.0f,-1.0f, 0.1f);
@@ -62,7 +72,8 @@ hle_land_draw(hle_land *land)
 		glTranslatef(0.0f, lotsize * i, 0.0f);
 
 		for (j = 0; j < land->width; j++) {
-			c = land->data[land->width * i + j];
+			offset = land->width * i + j;
+			c = land->data[offset];
 
 			switch (c) {
 			case 'w':
@@ -113,13 +124,13 @@ hle_land_draw(hle_land *land)
 				break;
 			}
 			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor);
-				
+			
 			glBegin(GL_TRIANGLE_STRIP);
 			glColor3f(0.5f, 0, 0);
-			glVertex3f( 0.0f,  0.0f, 0.0f);
-			glVertex3f( 0.0f, lotsize, 0.0f);
-			glVertex3f(lotsize,  0.0f, 0.0f);
-			glVertex3f(lotsize, lotsize, 0.0f);
+			glVertex3f( 0.0f,  0.0f, land->alt[offset * 4 + 0]);
+			glVertex3f( 0.0f, lotsize, land->alt[offset * 4 + 1]);
+			glVertex3f(lotsize,  0.0f, land->alt[offset * 4 + 2]);
+			glVertex3f(lotsize, lotsize, land->alt[offset * 4 + 3]);
 			glEnd();
 
 			glTranslatef(-lotsize, 0.0f, 0.0f);

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "SDL.h"
 
 #define MAX_ENTITIES 256
 
@@ -14,19 +15,27 @@ enum etype {
 #define LAND_WIDTH 64
 #define LAND_HEIGHT 32
 
+#define MAXFPS 60
+
+/*
+ * Represent a model in the 3D space, its list of vertices (*v), it's list
+ * of faces (*f) and its initial orientation. It will also contain 
+ * the material.
+ */
 typedef struct hle_obj_model_t {
-	double *v;
-	int vcount;
-	int *f;
-	int fcount;
-	double x;
-	double y;
-	double z;
-	double rot_x;
-	double rot_y;
-	double rot_z;
+	int	 vcount;
+	int	 fcount;
+	int	*f;
+	double	*v;
+	double	 rot_x;
+	double	 rot_y;
+	double	 rot_z;
 } hle_obj_model;
 
+/*
+ * An entity is a an object or a thing in the HLE world. It has a model, a
+ * location and orientation in space.
+ */
 typedef struct hle_entity_t {
 	unsigned int type;
 	double x;
@@ -38,16 +47,44 @@ typedef struct hle_entity_t {
 	char *model_path;
 } hle_entity;
 
+/*
+ * Representation of the land mass of the game, imported from the site.
+ */
 typedef struct hle_land_t {
-	unsigned int width;
-	unsigned int height;
-	char *data;
+	unsigned int	 width;
+	unsigned int	 height;
+	char		*data;
+	float		*alt;
 } hle_land;
+
+/*
+ * Represent the current status of the input controls.
+ */
+typedef struct hle_controls_t {
+	/* Keyboard Events */
+	int		 turn_left;
+	int		 turn_right;
+	int		 jumping;
+	int		 strafe_left;
+	int		 strafe_right;
+	int		 walk_forward;
+	int		 walk_backward;
+	/* Jump status */
+	int		 jump_step_idx;
+	/* Mouse Events */
+	float		 mouse_rotate;
+	float		 mouse_pan;
+	/* Application Events */
+	int		 exit;
+	/* Time tickers */
+	uint32_t	 last;
+} hle_controls;
 
 typedef struct hle_app_t {
 	hle_entity	*player;
 	hle_entity	**entities;
 	hle_land	*land;
+	hle_controls	*controls;
 } hle_app;
 
 /* strlcpy.c */
