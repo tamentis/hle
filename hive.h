@@ -55,6 +55,8 @@ typedef struct hle_land_t {
 	unsigned int	 height;
 	char		*data;
 	float		*alt;
+	int		 zone_size;
+	int		 zone_resolution;
 } hle_land;
 
 /*

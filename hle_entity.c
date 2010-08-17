@@ -51,7 +51,7 @@ hle_sign_new()
 {
 	hle_entity *e = hle_entity_new();
 	e->type = ETYPE_SIGN;
-	hle_entity_set_model_path(e, "dfsign.obj");
+	hle_entity_set_model_path(e, "data/models/dfsign.obj");
 	e->model->rot_x = 90.0;
 	return e;
 }

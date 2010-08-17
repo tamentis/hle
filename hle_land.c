@@ -3,6 +3,7 @@
  * the entities. In theory there should only be one land loaded in a given
  * app instance.
  */
+#include <math.h>
 
 #include "hlegl.h"
 #include "hive.h"
@@ -16,14 +17,53 @@ hle_land_new()
 	int i;
 	float v;
 	hle_land *land = hle_malloc(sizeof(hle_land));
+	land->zone_size = 500;
+	land->zone_resolution = 100;
+	land->width = 1;
+	land->height = 1;
+	/*
 	land->width = LAND_WIDTH;
 	land->height = LAND_HEIGHT;
-	land->data = hle_strcp("wwwssdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddwwsddddddsswwsswwwssssssssssssswwwwwwwwwwpwwwpwdddddgdddddddgdddwssdddggggsswwwwwssssswssssssssswwwpwwwpwppwpwwddddddgsssssgddddwssddgggggswwwwwwwssswsgggggggssswwpwpwpwpwwppwddddddsspspssddddwsddddggggswswsswwwwwwsggggggggssswwpwpwwwpwpwwwdddddsspspssddddwssdddggggswdwdswwwwwwsggssssgggsssswwwwwwwwwwwpdddddsssssssddddwsssdddgggswwwwwwwwwwssggswwsgggggssssssswwwwwwwwddddsssssssddddwwssddddggsswwwwwwwwwsgggswwsggggggssssssswswssssdddddspppsdddddwwsssddddgggssswswsswsggggswsggggggggssssssssssssdddddpssspdddddwwwsssddddggggswswsswwsggggssgggggggggsssgsgssssssddddddddddddddwwwwsssddddgggssgsssswwgggggggggggggggggggggggggggsdddddppppppppwwwwwssdddddggggggggsswwggggggggggggggggggggggggggssdddppspspspswwwwwsssdddddggggggggssgwwgggggggggssgggggssssssssssddppppppppppwwwwwssssddddddggggggggggwwwwwwwwwwwssssssssssssssssgdpsppddddddwwwwwwwsssdddddddggggggggggggggggggwwwsssswwwwsssssgggpppdddddddwwwwwwwwsssddddddddddgsgggsggsgsgssggswwwwwwwsswssggggpspggdddddwwwwwwwwssssdddddddgggsggsgsgsssgsgsgsswwwwwwwwwssggggpppgdddwddwwwwwwwwwssssdddddddggsggsssgsgsgsgsgsswwwwwwwwwssggggpspgddgdddwwwwwwwwwwssddddddddggsggsgsgsgsgsgsgsswwwwwwwwwwsggggpppgddddddwwgwwwwwwwwdddddddddddssgsgsgsgsgssggsswwwwwwwwwsssgggpspgddddddwwgwwwwwssssdssssddddddgggggggggggggsssswwwwwwwwwwsgggpppggdddddwwgwwwwsswsssssssssdddddwwgwwwdgggggssssswwwwwwssssgggpspggdddddwpppwwswwwwwwwwsssssddddddwwwddgggggggssswwwwwwsggggggpppgggddddwpppwwwwwwwwwwwwsssssddddddddddgggggppppppwwwssssgggggpspgggddddwpppwwwwwwwwwwwwwssssssdddddddddgggppppppppssssgggggggpppgggddddwwpwwwwwwwwwwwwwwwwsssssddddddddddppppppppppsgggggggggpspggggdddpwpwpwwgwwgwwwwwwwwwsssssdddddddddppppggpppppppppppppppppgpggdddwpppwwggggggwwwwwwwwwssssssdddddddpppggggpspspspspspspsppggggdddwwpgwggwggwgwwwwwwwwwwwssssssdddddpppggggppppppppppppppppgggddddwwpwgwgggggggwgwwwwwwwwwwssssssdddppppggppppddgggggggggggggdddddwpwpwwggggggwgwwwwwwwwwwwwwsssssssdppppppppdddddddddggggggddddddwpwpwwwgwwgwwwwwwwwwwwwwwwwwssssssssppppppdddddddddddddddddddddd");
+	*/
+	land->data = hle_strcp(
+	    "wwwssddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+	    "wwsddddddsswwsswwwssssssssssssswwwwwwwwwwpwwwpwdddddgdddddddgddd"
+	    "wssdddggggsswwwwwssssswssssssssswwwpwwwpwppwpwwddddddgsssssgdddd"
+	    "wssddgggggswwwwwwwssswsgggggggssswwpwpwpwpwwppwddddddsspspssdddd"
+	    "wsddddggggswswsswwwwwwsggggggggssswwpwpwwwpwpwwwdddddsspspssdddd"
+	    "wssdddggggswdwdswwwwwwsggssssgggsssswwwwwwwwwwwpdddddsssssssdddd"
+	    "wsssdddgggswwwwwwwwwwssggswwsgggggssssssswwwwwwwwddddsssssssdddd"
+	    "wwssddddggsswwwwwwwwwsgggswwsggggggssssssswswssssdddddspppsddddd"
+	    "wwsssddddgggssswswsswsggggswsggggggggssssssssssssdddddpssspddddd"
+	    "wwwsssddddggggswswsswwsggggssgggggggggsssgsgssssssdddddddddddddd"
+	    "wwwwsssddddgggssgsssswwgggggggggggggggggggggggggggsdddddpppppppp"
+	    "wwwwwssdddddggggggggsswwggggggggggggggggggggggggggssdddppspspsps"
+	    "wwwwwsssdddddggggggggssgwwgggggggggssgggggssssssssssddpppppppppp"
+	    "wwwwwssssddddddggggggggggwwwwwwwwwwwssssssssssssssssgdpsppdddddd"
+	    "wwwwwwwsssdddddddggggggggggggggggggwwwsssswwwwsssssgggpppddddddd"
+	    "wwwwwwwwsssddddddddddgsgggsggsgsgssggswwwwwwwsswssggggpspggddddd"
+	    "wwwwwwwwssssdddddddgggsggsgsgsssgsgsgsswwwwwwwwwssggggpppgdddwdd"
+	    "wwwwwwwwwssssdddddddggsggsssgsgsgsgsgsswwwwwwwwwssggggpspgddgddd"
+	    "wwwwwwwwwwssddddddddggsggsgsgsgsgsgsgsswwwwwwwwwwsggggpppgdddddd"
+	    "wwgwwwwwwwwdddddddddddssgsgsgsgsgssggsswwwwwwwwwsssgggpspgdddddd"
+	    "wwgwwwwwssssdssssddddddgggggggggggggsssswwwwwwwwwwsgggpppggddddd"
+	    "wwgwwwwsswsssssssssdddddwwgwwwdgggggssssswwwwwwssssgggpspggddddd"
+	    "wpppwwswwwwwwwwsssssddddddwwwddgggggggssswwwwwwsggggggpppgggdddd"
+	    "wpppwwwwwwwwwwwwsssssddddddddddgggggppppppwwwssssgggggpspgggdddd"
+	    "wpppwwwwwwwwwwwwwssssssdddddddddgggppppppppssssgggggggpppgggdddd"
+	    "wwpwwwwwwwwwwwwwwwwsssssddddddddddppppppppppsgggggggggpspggggddd"
+	    "pwpwpwwgwwgwwwwwwwwwsssssdddddddddppppggpppppppppppppppppgpggddd"
+	    "wpppwwggggggwwwwwwwwwssssssdddddddpppggggpspspspspspspsppggggddd"
+	    "wwpgwggwggwgwwwwwwwwwwwssssssdddddpppggggppppppppppppppppgggdddd"
+	    "wwpwgwgggggggwgwwwwwwwwwwssssssdddppppggppppddgggggggggggggddddd"
+	    "wpwpwwggggggwgwwwwwwwwwwwwwsssssssdppppppppdddddddddggggggdddddd"
+	    "wpwpwwwgwwgwwwwwwwwwwwwwwwwwssssssssppppppdddddddddddddddddddddd");
 
-	land->alt = hle_malloc(sizeof(float) * LAND_WIDTH * LAND_HEIGHT * 4);
+	land->alt = hle_malloc(sizeof(float) * land->zone_resolution * 
+			land->zone_resolution);
 
 	/* Generate the random altitudes */
-	for (i = 0; i < LAND_WIDTH * LAND_HEIGHT * 4; i++) {
+	for (i = 0; i < land->zone_resolution * land->zone_resolution; i++) {
 		land->alt[i] = (random() % 100) / 50.0f;
 	}
 
@@ -53,7 +93,6 @@ hle_land_draw(hle_land *land)
 	int offset;
 	float mcolor[4];
 	mcolor[3] = 1.0f;
-	float lotsize = 20.0f;
 
 	glPushMatrix();
 
@@ -69,7 +108,7 @@ hle_land_draw(hle_land *land)
 	for (i = 0; i < land->height; i++) {
 		glPopMatrix();
 		glPushMatrix();
-		glTranslatef(0.0f, lotsize * i, 0.0f);
+		glTranslatef(0.0f, land->zone_size * i, 0.0f);
 
 		for (j = 0; j < land->width; j++) {
 			offset = land->width * i + j;
@@ -125,16 +164,43 @@ hle_land_draw(hle_land *land)
 			}
 			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, mcolor);
 			
-			glBegin(GL_TRIANGLE_STRIP);
-			glColor3f(0.5f, 0, 0);
-			glVertex3f( 0.0f,  0.0f, land->alt[offset * 4 + 0]);
-			glVertex3f( 0.0f, lotsize, land->alt[offset * 4 + 1]);
-			glVertex3f(lotsize,  0.0f, land->alt[offset * 4 + 2]);
-			glVertex3f(lotsize, lotsize, land->alt[offset * 4 + 3]);
-			glEnd();
+			hle_land_draw_zone(land);
 
-			glTranslatef(-lotsize, 0.0f, 0.0f);
+			glTranslatef(-land->zone_size, 0.0f, 0.0f);
 		}
+	}
+
+	glPopMatrix();
+}
+
+float
+hle_land_get_alt(hle_land *land, int x, int y)
+{
+	if (y >= land->zone_resolution)
+		y = land->zone_resolution - 1;
+	if (x >= land->zone_resolution)
+		y = land->zone_resolution - 1;
+	return land->alt[y * land->zone_resolution + x];
+}
+
+void
+hle_land_draw_zone(hle_land *land)
+{
+	float l = land->zone_size / land->zone_resolution;
+	float w = land->zone_resolution;
+	float x = 0, y = 0;
+
+	glPushMatrix();
+
+	for (y = 0; y < land->zone_resolution; y++) {
+		glBegin(GL_TRIANGLE_STRIP);
+		for (x = 0; x < land->zone_resolution; x++) {
+			glVertex3f(x * l, y * l,
+					hle_land_get_alt(land, x, y));
+			glVertex3f(x * l, y * l + l, 
+					hle_land_get_alt(land, x, y + 1));
+		}
+		glEnd();
 	}
 
 	glPopMatrix();

@@ -1,8 +1,14 @@
 TODO
 ----
 
-Add timer to regulate frame rate.
-Add jump.
+Create another triangle to "be" the player and when add F12 as a way to
+toggle this view.
+
+Create a big ball and put the world in it, texture it with sky/space.
+
+Instead of creating two triangles to represent one area, produce a variable
+amount of them. I would probably generate the vertices firsta
+
 Add more natural walk.
 Add textures.
 Add OSD.

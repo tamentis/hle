@@ -301,19 +301,19 @@ hle_app_draw_entities()
 	}
 }
 
-
 void
 hle_app_draw_lights()
 {
 	/* white ambient light at half intensity (rgba) */
-	GLfloat LightAmbient[] = { 0, 0, 0, 1.0f };
+	GLfloat LightAmbient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 
 	/* super bright, full intensity diffuse light. */
-	GLfloat LightDiffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	GLfloat LightSpecular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat LightDiffuse[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat LightSpecular[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 
 	/* position of light (x, y, z, (position of light)) */
-	GLfloat LightPosition[] = { 0.0f, 0.0f, 1.0f, 1.0f };
+	GLfloat LightPosition[] = { - app->player->x, - app->player->y,
+		12.0f + app->player->z, 1.0f };
 
 	// set up light number 1.
 	glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);  // add lighting. (ambient)
@@ -323,9 +323,10 @@ hle_app_draw_lights()
 	glEnable(GL_LIGHT1);
 
 	/* Player view */
+	/*
 	GLfloat Light2Diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	GLfloat Light2Position[] = { app->player->x, app->player->y,
-		app->player->z - 2.0f, 1.0f };
+	GLfloat Light2Position[] = { app->player->x + 4.0f, app->player->y,
+		app->player->z, 1.0f };
 
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, Light2Diffuse);
 	glLightfv(GL_LIGHT2, GL_POSITION,Light2Position);
@@ -334,6 +335,7 @@ hle_app_draw_lights()
 	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.08f);
 
 	glEnable(GL_LIGHT2);
+	*/
 
 	glEnable(GL_LIGHTING);
 }
@@ -391,12 +393,12 @@ hle_app_draw()
 	glShadeModel(GL_SMOOTH);
 	glPushMatrix();
 
-	hle_app_draw_lights();
-
 	/* The initial position of the world defines the view of the player. */
 	glRotatef(app->player->rot, 0, 1.0f, 0); // x, y, z
 	glTranslatef(app->player->x, -4.0f - app->player->z, -app->player->y);
 	glRotatef(-90.0f, 1.0f, 0, 0);
+
+	hle_app_draw_lights();
 
 	/* Draw the land */
 	glPushMatrix();
