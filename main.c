@@ -40,8 +40,6 @@ main(int argc, char **argv)
 
 	/* Set the title bar in environments that support it */
 	SDL_WM_SetCaption("Hiveland Explorer", NULL);
-	SDL_WM_GrabInput(SDL_GRAB_ON);
-	SDL_ShowCursor(0);
 
 	init_gl(WINDOW_WIDTH, WINDOW_HEIGHT);
 

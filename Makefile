@@ -3,7 +3,8 @@ CFLAGS+=`sdl-config --cflags` -Wall -ggdb
 LIBS+=`sdl-config --libs` -lGL -lGLU -lm
 OBJECTS=main.o memory.o strlcpy.o fatal.o \
 	hle_app.o hle_entity.o hle_player.o \
-	objloader.o hle_land.o hle_controls.o
+	objloader.o hle_land.o hle_controls.o \
+	hle_atmosphere.o
 
 PROGRAM=hle
 

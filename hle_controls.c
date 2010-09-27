@@ -24,6 +24,8 @@ hle_controls_new()
 
 	/* Application events */
 	c->exit = 0;
+	c->view_mode = VMODE_FIRST_PERSON;
+	c->show_console = HLE_FALSE;
 
 	/* Tickers */
 	c->last = SDL_GetTicks();
@@ -68,6 +70,18 @@ hle_controls_read_from_event(hle_controls *c, SDL_Event event)
 			break;
 		case SDLK_d:
 			c->strafe_right = c->strafe_left + 1;
+			break;
+		case SDLK_F12:
+			if (c->view_mode == VMODE_FIRST_PERSON)
+				c->view_mode = VMODE_THIRD_PERSON;
+			else
+				c->view_mode = VMODE_FIRST_PERSON;
+			break;
+		case SDLK_BACKQUOTE:
+			if (c->show_console == HLE_TRUE)
+				c->show_console = HLE_FALSE;
+			else
+				c->show_console = HLE_TRUE;
 			break;
 		default:
 			break;

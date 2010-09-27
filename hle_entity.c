@@ -7,6 +7,7 @@ hle_entity_new()
 	e->x = 0.0f;
 	e->y = 0.0f;
 	e->rot = 0.0f;
+	e->invert_rotation = HLE_TRUE;
 	e->pan = 0.0f;
 	e->type = ETYPE_UNKNOWN;
 	e->model = NULL;

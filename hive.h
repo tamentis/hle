@@ -9,6 +9,18 @@ enum etype {
 	ETYPE_SIGN = 2
 };
 
+/* View Modes */
+enum vmode {
+	VMODE_FIRST_PERSON = 0,
+	VMODE_THIRD_PERSON = 1
+};
+
+/* Boolean */
+enum hlebool {
+	HLE_FALSE = 0,
+	HLE_TRUE = 1
+};
+
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 768
 
@@ -42,6 +54,7 @@ typedef struct hle_entity_t {
 	double y;
 	double z;
 	double rot;
+	enum hlebool invert_rotation;
 	double pan;
 	hle_obj_model *model;
 	char *model_path;
@@ -78,6 +91,8 @@ typedef struct hle_controls_t {
 	float		 mouse_pan;
 	/* Application Events */
 	int		 exit;
+	enum vmode	 view_mode;
+	enum hlebool	 show_console;
 	/* Time tickers */
 	uint32_t	 last;
 } hle_controls;

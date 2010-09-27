@@ -20,7 +20,7 @@ hle_app_new()
 	app->entities = hle_malloc(sizeof(hle_entity *) * MAX_ENTITIES);
 	for (i = 0; i < MAX_ENTITIES; i++)
 		app->entities[i] = NULL;
-	
+
 	/* Land */
 	app->land = hle_land_new();
 
@@ -82,7 +82,6 @@ hle_app_main_loop()
 
 /**
  * Setup a few initial objects.
- * FIXME: remove temp objects.
  */
 void
 hle_app_setup_game_world()
@@ -95,10 +94,15 @@ hle_app_setup_game_world()
 	hle_app_register_entity(sign1);
 
 	sign2 = hle_sign_new();
-	sign2->z = 3.0;
+	sign2->z = 13.0;
 	sign2->x = 5.0;
 	sign2->rot = 70.0;
 	hle_app_register_entity(sign2);
+
+	/* Setup initial player entity */
+	hle_entity_set_model_path(app->player, "data/models/dfsign.obj");
+	app->player->model->rot_x = 90.0;
+	hle_app_register_entity(app->player);
 }
 
 
@@ -128,6 +132,14 @@ hle_app_handle_events(uint32_t now)
 	if (now - event_frame_size > c->last) {
 		hle_app_handle_framed_events(now);
 		c->last = now;
+	}
+
+	if (c->show_console == HLE_TRUE) {
+		SDL_WM_GrabInput(SDL_GRAB_OFF);
+		SDL_ShowCursor(1);
+	} else {
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+		SDL_ShowCursor(0);
 	}
 
 	hle_app_handle_hit_events(now);
@@ -259,8 +271,14 @@ hle_app_draw_entity(hle_entity *e)
 
 	rot_x += e->model->rot_x;
 	rot_y += e->model->rot_y;
-	rot_y += e->rot;
+	if (e->invert_rotation == HLE_TRUE)
+		rot_y -= e->rot;
+	else
+		rot_y += e->rot;
 	rot_z += e->model->rot_z;
+
+	/* Move the cursor at the entity's location */
+	glTranslatef(-1.0f * e->x, -1.0f * e->y, e->z);
 
 	if (rot_x != 0) glRotatef(rot_x, 1.0f, 0, 0);
 	if (rot_y != 0) glRotatef(rot_y, 0, 1.0f, 0);
@@ -273,7 +291,7 @@ hle_app_draw_entity(hle_entity *e)
 			x = e->model->v[vidx * 3 + 0];
 			y = e->model->v[vidx * 3 + 1];
 			z = e->model->v[vidx * 3 + 2];
-			glVertex3f(x + e->x, y + e->y, z + e->z);
+			glVertex3f(x, y, z);
 		}
 		glEnd();
 	}
@@ -305,33 +323,32 @@ void
 hle_app_draw_lights()
 {
 	/* white ambient light at half intensity (rgba) */
-	GLfloat LightAmbient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	GLfloat LightAmbient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
 	/* super bright, full intensity diffuse light. */
 	GLfloat LightDiffuse[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	// GLfloat LightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	GLfloat LightSpecular[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 
 	/* position of light (x, y, z, (position of light)) */
 	GLfloat LightPosition[] = { - app->player->x, - app->player->y,
 		12.0f + app->player->z, 1.0f };
 
-	// set up light number 1.
 	glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);  // add lighting. (ambient)
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);  // add lighting. (diffuse).
 	glLightfv(GL_LIGHT1, GL_SPECULAR,LightSpecular); // set light position.
 	glLightfv(GL_LIGHT1, GL_POSITION,LightPosition); // set light position.
 	glEnable(GL_LIGHT1);
 
-	/* Player view */
 	/*
-	GLfloat Light2Diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	GLfloat Light2Position[] = { app->player->x + 4.0f, app->player->y,
-		app->player->z, 1.0f };
+	GLfloat Light2Diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat Light2Position[] = { app->player->x, app->player->y,
+		30.0f, 1.0f };
 
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, Light2Diffuse);
 	glLightfv(GL_LIGHT2, GL_POSITION,Light2Position);
-	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, 1.0f);
-	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.5f);
+	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, 0.0f);
+	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.0f);
 	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.08f);
 
 	glEnable(GL_LIGHT2);
@@ -376,9 +393,20 @@ hle_app_draw_hud()
 	glVertex3f( 1.0f,  0.0f, 0.0f);
 	glVertex3f( 1.0f,  1.0f, 0.0f);
 	glEnd();
+
+	if (app->controls->show_console) {
+		glTranslatef(1.5, 0.0, 0.0f);
+		glBegin(GL_TRIANGLE_STRIP);
+		glColor3f(0.5f, 0, 0);
+		glVertex3f( 0.0f,  0.0f, 0.0f);
+		glVertex3f( 0.0f,  2.0f, 0.0f);
+		glVertex3f( 8.0f,  0.0f, 0.0f);
+		glVertex3f( 8.0f,  2.0f, 0.0f);
+		glEnd();
+	}
+
 	switchBackToFrustum();
 }
-
 
 /**
  * The main drawing function, typically draws the world, then the entities,
@@ -387,15 +415,38 @@ hle_app_draw_hud()
 void
 hle_app_draw()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// Clear The Screen And The Depth Buffer
+	float cam_x, cam_y, rad_angle;
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glShadeModel(GL_SMOOTH);
 	glPushMatrix();
 
-	/* The initial position of the world defines the view of the player. */
-	glRotatef(app->player->rot, 0, 1.0f, 0); // x, y, z
-	glTranslatef(app->player->x, -4.0f - app->player->z, -app->player->y);
+	glEnable(GL_TEXTURE_2D);
+
+	/* Draw the atmosphere */
+	glPushMatrix();
+		hle_atmosphere_draw(app);
+	glPopMatrix();
+
+	/* 
+	 * In first person view, the initial position of the world defines 
+	 * the view of the player.
+	 */
+	cam_x = app->player->x;
+	cam_y = -app->player->y;
+
+	if (app->controls->view_mode == VMODE_FIRST_PERSON) {
+		cam_x = app->player->x;
+		cam_y = -app->player->y;
+	} else {
+		rad_angle = (M_PI / 180.0) * app->player->rot;
+		cam_x += sin(rad_angle) * 10.0f;
+		cam_y -= cos(rad_angle) * 10.0f;
+	}
+	glRotatef(app->player->rot, 0, 1.0f, 0);
+	glTranslatef(cam_x, -4.0f - app->player->z, cam_y);
 	glRotatef(-90.0f, 1.0f, 0, 0);
 
 	hle_app_draw_lights();
@@ -407,11 +458,10 @@ hle_app_draw()
 
 	/* Draw entities */
 	glPushMatrix();
-		glTranslatef(0.0, 0.0, 4.0f);
 		hle_app_draw_entities();
 	glPopMatrix();
 
-	/* Return to identity to draw the HUD */
+	/* Return to identity to draw the HUD and Console */
 	glPopMatrix();
 	hle_app_draw_hud();
 

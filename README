@@ -1,21 +1,21 @@
 TODO
 ----
+ - create a big ball and put the world in it, texture it with sky/space.
 
-Create another triangle to "be" the player and when add F12 as a way to
-toggle this view.
+ - more natural walk.
 
-Create a big ball and put the world in it, texture it with sky/space.
+ - Add textures.
 
-Instead of creating two triangles to represent one area, produce a variable
-amount of them. I would probably generate the vertices firsta
+ - Add OSD.
 
-Add more natural walk.
-Add textures.
-Add OSD.
-Add Sky and Space (flat world).
- - every 12 hours the sky and space flips (night)
+ - Add Sky and Space (flat world).
+
+ - every 12 hours the sky and space flips (night), it happens suddenly because
+   of some magnetic shift.
 
 Far down the line:
  - idea of a temple to venerate the block changing gods
 
-Avatars will not have name tags.
+ - avatars will not have name tags, only bubbles above their head.
+
+ - you can choose to speak loud or not, it changes the size of the font.
